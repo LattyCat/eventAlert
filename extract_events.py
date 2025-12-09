@@ -33,7 +33,7 @@ def send_teams_notification(alerts):
                     "body": [
                         {
                             "type": "TextBlock",
-                            "text": "⚠️ 以下のイベントを開催終了ステータスに変更してください。",
+                            "text": "⚠️イベントを開催終了に変更してください",
                             "size": "Large",
                             "weight": "Bolder",
                         },
