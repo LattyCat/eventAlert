@@ -1,6 +1,64 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import os
+import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+def send_teams_notification(alerts):
+    webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
+    if not webhook_url:
+        print("TEAMS_WEBHOOK_URL environment variable not set. Skipping notification.")
+        return
+
+    # Format the Adaptive Card
+    facts = []
+    for alert in alerts:
+        facts.append({"title": alert["date"], "value": alert["title"]})
+
+    payload = {
+        "type": "message",
+        "attachments": [
+            {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "contentUrl": None,
+                "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "body": [
+                        {
+                            "type": "TextBlock",
+                            "text": "⚠️ 以下のイベントを開催終了ステータスに変更してください。",
+                            "size": "Large",
+                            "weight": "Bolder",
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "以下のイベントは開催日時を過ぎていますが、終了ステータスになっていません。",
+                            "wrap": True,
+                        },
+                        {"type": "FactSet", "facts": facts},
+                    ],
+                },
+            }
+        ],
+    }
+
+    try:
+        response = requests.post(
+            webhook_url,
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        print("Teams notification sent successfully.")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send Teams notification: {e}")
 
 
 def extract_event_dates(url):
@@ -79,5 +137,7 @@ if __name__ == "__main__":
         print("\n!!! ALERTS FOUND !!!")
         for alert in alerts:
             print(alert["message"])
+
+        send_teams_notification(alerts)
     else:
         print("\nNo alerts found. All past events seem to be marked correctly.")
